@@ -1,0 +1,28 @@
+# Setting up the project's .envrc
+#
+# make a copy of this file as .envrc i.e.
+# cp .envrc.example .envrc
+#
+# This will allow you to use the `west` tool from your shell provided that you
+# have previously setup the needed build tools via:
+#   make setup
+
+# The board target you are compiling for
+#
+export BOARD=qemu_x86
+
+# (Optional) Zephyr base and Toolchain overrides
+#
+# export ZEPHYR_DIR=
+# export TOOLCHAIN_DIR=
+# export DL_CACHE_DIR=
+
+# Setup zephyr environment
+export TOPDIR=$(git rev-parse --show-toplevel)
+source zephyr.env
+source ${ZEPHYR_SDK_INSTALL_DIR}/environment-setup-x86_64-pokysdk-linux
+export PATH="${VIRTUAL_ENV}/bin:${PATH}"
+
+export ZEPHYR_DIR=${ZEPHYR_DIR:-${ZEPHYR_DIR_DEFAULT}}
+export TOOLCHAIN_DIR=${TOOLCHAIN_DIR:-${TOOLCHAIN_DIR_DEFAULT}}
+export DL_CACHE_DIR=${DL_CACHE_DIR:-${DL_CACHE_DIR_DEFAULT}}

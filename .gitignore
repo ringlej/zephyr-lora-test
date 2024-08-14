@@ -1,0 +1,6 @@
+build
+*.log
+.envrc
+.docs
+twister-out*
+dev.conf

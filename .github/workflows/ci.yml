@@ -1,0 +1,58 @@
+on: [push]
+
+env:
+  BOARD: qemu_x86
+  ZEPHYR_DIR: /opt/zephyrproject
+  TOOLCHAIN_DIR: /opt/gnu-arm-toolchain
+
+jobs:
+  test_and_build:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup env
+        run: |
+          echo "#!/bin/bash
+          export TOPDIR="${{ github.WORKSPACE }}"
+          echo "TOPDIR=${{ github.WORKSPACE }}"
+          source zephyr.env
+          $(sed 's/^export \(.*\)$/echo "\1"/g' zephyr.env)
+          " > /tmp/zephyr_env
+          chmod +x /tmp/zephyr_env
+          /tmp/zephyr_env
+          /tmp/zephyr_env >> $GITHUB_ENV
+      - name: Check GNU ARM toolchain cache
+        id: cache-toolchain
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.TOOLCHAIN_DIR }}
+          key: ${{ runner.os }}-toolchain-${{ env.TOOLCHAIN_VERSION }}-${{ hashFiles('${{ env.TOOLCHAIN_DIR_LINK }}/VERSION') }}
+      - name: Check Zephyr project cache
+        id: cache-zephyr
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.ZEPHYR_DIR }}
+          key: ${{ runner.os }}-zephyr-${{ env.ZEPHYR_VERSION }}-${{ hashFiles('${{ env.ZEPHYR_DIR_LINK }}/zephyr/VERSION') }}
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build cmake python3-venv
+          make setup
+      - name: Build firmware
+        run: |
+          make build
+      - name: Save artifacts
+        run: |
+          mkdir -p artifacts
+          export APP_NAME=$(basename $(git rev-parse --show-toplevel))
+          export KERNEL_BIN_NAME="${APP_NAME}[${BOARD}]"
+          cp build/$BOARD/zephyr/${KERNEL_BIN_NAME}.bin artifacts/${KERNEL_BIN_NAME}.bin
+          cp build/$BOARD/zephyr/${KERNEL_BIN_NAME}.hex artifacts/${KERNEL_BIN_NAME}.hex
+      - name: Archive artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: build-artifacts
+          path: artifacts
+      - name: Clean build
+        run: |
+          make clean
